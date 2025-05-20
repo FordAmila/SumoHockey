@@ -1,240 +1,89 @@
-#define IN1 7
-#define IN2 8
-#define ENA 9
+# 🤖 SumoHockey Project
 
-#define IN3 11
-#define IN4 12
-#define ENB 10
+**SumoHockey** is a hybrid Arduino-based robot that combines the functionalities of a **SumoBot** and a **HockeyBot**, switchable through a single SPDT mode toggle. Designed for both competitive robotics and interactive play, this project integrates multiple sensors, PWM-controlled motors, and Bluetooth-based remote control for dynamic maneuverability.
 
-#define MODE_SWITCH 2  // D4 switch between sumo and Bluetooth
-#define TRIG_PIN 4
-#define ECHO_PIN 3
-#define IR_SENSOR 6
+## 🔧 Features
 
-char command = 'S';  // Default to Stop
-bool isMovingForward = false; // Track if forward is pressed
-bool wasControlledMode = false; // Track the previous mode
+- 🥋 **Sumo Mode**
+  - IR sensors to detect the white boundary of a black doyo ring
+  - Ultrasonic sensor for opponent detection and strategic attack
+  - Aggressive autonomous behavior for Sumo competitions
 
-void setup() {
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(ENA, OUTPUT);
+- 🏒 **Hockey Mode**
+  - Bluetooth control via custom MIT App Inventor mobile app
+  - PWM-based motor speed control (0–255 range)
+  - Precision control for interactive play and robot soccer
 
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
-  pinMode(ENB, OUTPUT);
+- 🛠️ **Shared Features**
+  - Arduino Nano-based control
+  - L298N motor driver
+  - 7.4V rechargeable battery with buck converter
+  - Mode selection using an SPDT switch on digital pin
+  - Robust chassis and modular wiring for easy maintenance
 
-  pinMode(MODE_SWITCH, INPUT);
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(IR_SENSOR, INPUT);
+## 🧠 Components Used
 
-  Serial.begin(9600);
-  delay(5000); // Autonomous mode start delay
-}
+| Component              | Description                            |
+|------------------------|----------------------------------------|
+| Arduino Nano           | Main microcontroller                   |
+| L298N Motor Driver     | Dual H-Bridge to drive DC motors       |
+| Ultrasonic Sensor (HC-SR04) | Object/opponent detection        |
+| IR Sensors             | Line/boundary detection                |
+| SPDT Switch            | Toggle between Sumo and Hockey modes   |
+| Bluetooth Module (HC-05/06) | Wireless communication           |
+| 7.4V Li-ion Battery    | Power source for motors and Arduino    |
+| Buck Converter         | Voltage regulation                     |
+| Custom Android App     | Bluetooth controller with PWM sliders  |
 
-void loop() {
-  int mode = digitalRead(MODE_SWITCH);
-   int distance2 = readUltrasonic();
- Serial.println("");
- Serial.println(distance2);
- Serial.println("");
+## 📱 Mobile App
 
-  if (mode == HIGH) {
-    wasControlledMode = true; // Track that we were in controlled mode
-     Serial.println("HIGH");
-    controlledMode();
-  } else {
-    if (wasControlledMode) {
-      delay(5000); // Delay when transitioning to autonomous mode
-      wasControlledMode = false; // Reset the flag
-       Serial.println("LOW");
-    }
-    autonomousMode();
-  }
-}
+- Built with MIT App Inventor
+- Two modes:
+  - **Sumo** (autonomous)
+  - **Hockey** (manual with PWM sliders)
+- Connects via Bluetooth to control robot
 
-// Controlled Mode Functions
-void controlledMode() {
-  if (Serial.available()) {
-    command = Serial.read();  // Read single character
-  }
+## 🔌 Wiring Overview
 
-  switch (command) {
-    case 'F': moveForward();  Serial.println("forward") ;break;      // Start moving forward
-    case 'G': if (isMovingForward) boostForward();  break; // Boost only if moving forward
-    case 'B': moveBackward(); Serial.println("back") ; break;
-    case 'R': turnLeftGradual();  Serial.println("right") ; break;
-    case 'L': turnRightGradual();  Serial.println("left") ;break;
-    case 'r': spinLeft(); break;
-    case 'l': spinRight(); break;
-    case 'S': stopMotors(); break;
-    default: stopMotors(); break;
-  }
-  delay(30);
-}
+- SPDT switch: Mode selection input on D2
+- IR sensors: Digital pins for boundary detection
+- Ultrasonic sensor: Trigger/Echo to D7/D6 (example)
+- Motors: Connected through L298N to Arduino and power
+- Bluetooth: RX/TX connected to Arduino Serial
 
-// Autonomous Mode Functions
-void autonomousMode() {
-  int distance = readUltrasonic();
-  int irValue = digitalRead(IR_SENSOR);
+## 🎮 Controls
 
-  if (irValue == LOW) {
-    reverse();
-    delay(400);
-  } else if (distance > 0 && distance <= 10) {
-    closeAttack();
-  } else if (distance > 6 && distance <= 20) {
-    attack();  
-     Serial.println("Attack");
+| Mode     | Control Method        | Behavior                    |
+|----------|-----------------------|-----------------------------|
+| Sumo     | Autonomous (IR + Ultrasonic) | Seek and push opponent, avoid boundary |
+| Hockey   | Manual (Bluetooth App) | Real-time directional control with speed tuning |
 
-  } else {
-    search(); // Nothing detected = start searching
-  }
-  delay(10); // small delay for fast loop cycle
-}
 
-// Shared Motor Control Functions
-void moveForward() {
-  isMovingForward = true; 
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 150);
+## 🚀 Getting Started
 
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 150);
-}
+1. Upload the `sumohockey.ino` to your Arduino Nano.
+2. Connect all components as shown in the wiring diagram.
+3. Pair your phone with the Bluetooth module.
+4. Load and run the Android app.
+5. Use the SPDT switch to toggle between Sumo and Hockey modes.
 
-void boostForward() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 255);
+## 📚 Future Improvements
 
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 255);
-}
+- Add OLED display for debug/status info
+- PID control for smoother motor response
+- Add buzzer feedback and LEDs
+- Multi-mode LCD interface
+- Autonomous Hockey behavior
 
-void moveBackward() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  analogWrite(ENA, 150);
+## 👥 Authors
 
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-  analogWrite(ENB, 150);
-}
+- Clifford Clint A. Amila – Hardware Design, Arduino Programming, App Development
+- Team Members: Edden Dawn Marie A. Guzman
 
-void turnLeftGradual() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 150);
+## 📜 License
 
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 80);
-}
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-void turnRightGradual() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 80);
+---
 
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 150);
-}
-
-void spinLeft() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  analogWrite(ENA, 120);
-
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 120);
-}
-
-void spinRight() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 120);
-
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-  analogWrite(ENB, 120);
-}
-
-void stopMotors() {
-  analogWrite(ENA, 0);
-  analogWrite(ENB, 0);
-}
-
-// Autonomous Specific Functions
-void attack() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 255);
-
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 255);
-
-  monitorIRDuring(1000);
-}
-
-void closeAttack() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 100);
-
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 100);
-
-  monitorIRDuring(1000);
-}
-
-void reverse() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  analogWrite(ENA, 180);
-
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-  analogWrite(ENB, 120);
-}
-
-void search() {
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  analogWrite(ENA, 150);
-
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  analogWrite(ENB, 90);
-}
-
-int readUltrasonic() {
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-
-  long duration = pulseIn(ECHO_PIN, HIGH, 20000);
-  return duration * 0.034 / 2;
-}
-
-void monitorIRDuring(unsigned long duration) {
-  unsigned long startTime = millis();
-  while (millis() - startTime < duration) {
-    if (digitalRead(IR_SENSOR) == LOW) {
-      reverse();
-      delay(400);
-      break;
-    }
-    delay(1);
-  }
-}
+_Enjoy building and battling with SumoHockey!_
